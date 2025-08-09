@@ -1,4 +1,4 @@
-# cse6332
+# cse6332_project
 CSE 6332 Cloud Project
 
 Quick Start
