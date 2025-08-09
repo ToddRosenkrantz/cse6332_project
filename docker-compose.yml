@@ -1,0 +1,288 @@
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: zookeeper
+    restart: unless-stopped
+    #user: "${UID}:${GID}"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_4LW_COMMANDS_WHITELIST=ruok,mntr,conf,stat,srvr
+      - TZ=${TZ}
+      - JVMFLAGS=-javaagent:/jmx/jmx_prometheus_javaagent-1.0.1.jar=7072:/jmx/zookeeper-jmx-config.yml
+    ports:
+      - "2181:2181"
+      - "7072:7072"
+    networks:
+      - sparknet
+    volumes:
+      - zookeeper_data:/bitnami/zookeeper
+      - ./volumes/jmx:/jmx
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+#    healthcheck:
+#      test: ["CMD", "zkServer.sh", "status"]
+#      interval: 20s
+#      timeout: 10s
+#      retries: 10
+#      start_period: 30s
+
+  zookeeper-exporter:
+    image: dabealu/zookeeper-exporter:latest
+    container_name: zookeeper-exporter
+    command: ["-zk-hosts", "zookeeper:2181"]
+    ports:
+      - "9141:9141"
+    depends_on:
+      - zookeeper
+    networks:
+      - sparknet
+
+  kafka:
+    image: bitnami/kafka:3.6
+    container_name: kafka
+    restart: unless-stopped
+    #user: "${UID}:${GID}"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=INTERNAL://:29092,EXTERNAL://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_CFG_DELETE_TOPIC_ENABLE=true
+      - KAFKA_HEAP_OPTS=-Xmx512m -Xms512m
+      - TZ=${TZ}
+    ports:
+      - "9092:9092"
+    networks:
+      - sparknet
+    volumes:
+      - kafka_data:/bitnami/kafka
+      - ./volumes/jmx:/jmx
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+    command: >
+      bash -c '
+        export KAFKA_OPTS="-javaagent:/jmx/jmx_prometheus_javaagent-1.0.1.jar=7071:/jmx/kafka-jmx-config.yml"
+        /opt/bitnami/scripts/kafka/run.sh'
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: kafka-exporter
+    #user: "${UID}:${GID}"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "9308:9308"
+    environment:
+      - KAFKA_SERVER=kafka:29092
+      - TZ=${TZ}
+    command:
+      - --kafka.server=kafka:29092
+    networks:
+      - sparknet
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9308/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    #user: "${UID}:${GID}"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel,grafana-simple-json-datasource
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - TZ=${TZ}
+    ports:
+      - "3000:3000"
+    networks:
+      - sparknet
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    restart: unless-stopped
+    #user: "${UID}:${GID}"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - sparknet
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - TZ=${TZ}
+      - MINIO_PROMETHEUS_AUTH_TYPE=public
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    #user: "${UID}:${GID}"
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "9090:9090"
+    networks:
+      - sparknet
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  spark-master:
+    image: bitnami/spark:3.5.5
+    container_name: spark-master
+    restart: unless-stopped
+    environment:
+      - SPARK_MODE=master
+      - SPARK_DAEMON_JAVA_OPTS=-Dspark.metrics.conf=/opt/bitnami/spark/conf/metrics.properties
+      - TZ=${TZ}
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    networks:
+      - sparknet
+    volumes:
+      - ./volumes/jars:/opt/bitnami/spark/custom-jars
+      - ./jobs:/opt/bitnami/spark/jobs
+      - ./volumes/spark-metrics/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
+
+  spark-worker:
+    image: bitnami/spark:3.5.5
+    container_name: spark-worker
+    restart: unless-stopped
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_DAEMON_JAVA_OPTS=-Dspark.metrics.conf=/opt/bitnami/spark/conf/metrics.properties
+      - TZ=${TZ}
+    ports:
+      - "8081:8081"
+    networks:
+      - sparknet
+    volumes:
+      - ./volumes/jars:/opt/bitnami/spark/custom-jars
+      - ./jobs:/opt/bitnami/spark/jobs
+      - ./volumes/spark-metrics/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
+
+  spark-consumer-json:
+    image: bitnami/spark:3.5.5
+    container_name: spark-consumer-json
+    cpus: 2.0
+    depends_on:
+      - spark-master
+      - kafka
+    restart: unless-stopped
+    networks:
+      - sparknet
+    ports:
+      - "4041:4040"   # Host 4041 -> Container 4040
+    volumes:
+      - ./volumes/jars:/opt/bitnami/spark/custom-jars
+      - ./jobs:/opt/bitnami/spark/jobs
+      - ./volumes/spark-metrics/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
+    command: >
+      /opt/bitnami/spark/bin/spark-submit
+      --master spark://spark-master:7077
+      --jars /opt/bitnami/spark/custom-jars/*
+      --conf spark.executor.cores=2
+      --conf spark.default.parallelism=4
+      --conf spark.cores.max=2
+      --conf spark.sql.session.timeZone=America/Chicago
+      /opt/bitnami/spark/jobs/kafka_json_consumer.py
+
+  spark-consumer-parquet:
+    image: bitnami/spark:3.5.5
+    container_name: spark-consumer-parquet
+    cpus: 2.0
+    depends_on:
+      - spark-master
+      - kafka
+    restart: unless-stopped
+    networks:
+      - sparknet
+    ports:
+      - "4042:4040"   # Host 4042 -> Container 4040
+    volumes:
+      - ./volumes/jars:/opt/bitnami/spark/custom-jars
+      - ./jobs:/opt/bitnami/spark/jobs
+      - ./volumes/spark-metrics/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
+    command: >
+      /opt/bitnami/spark/bin/spark-submit
+      --master spark://spark-master:7077
+      --jars /opt/bitnami/spark/custom-jars/*
+      --conf spark.executor.cores=2
+      --conf spark.default.parallelism=4
+      --conf spark.cores.max=2
+      --conf spark.sql.session.timeZone=America/Chicago
+      /opt/bitnami/spark/jobs/kafka_parquet_consumer.py
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    networks:
+      - sparknet
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+volumes:
+  zookeeper_data:
+  kafka_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  sparknet:

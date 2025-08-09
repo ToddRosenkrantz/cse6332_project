@@ -1,0 +1,18 @@
+# Local helper files/scripts
+make_zip.sh
+.zipignore
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Build / dependency folders
+node_modules/
+dist/
+build/
+.venv/
+__pycache__/
+*.log
+
+# Explicitly allow the main project zip
+!cse6332_project.zip

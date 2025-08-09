@@ -1,0 +1,86 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'cadvisor'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['host.docker.internal:8088']
+
+  - job_name: 'kafka-producer-json'
+    scrape_interval: 2s
+    static_configs:
+      - targets: ['host.docker.internal:9108']
+
+  - job_name: 'kafka-producer-parq'
+    scrape_interval: 2s
+    static_configs:
+      - targets: ['host.docker.internal:9109']
+
+  # Spark Master
+  - job_name: 'spark-master'
+    metrics_path: /metrics/prometheus
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['spark-master:8080']
+
+  # Spark Worker
+  - job_name: 'spark-worker'
+    metrics_path: /metrics/prometheus
+    static_configs:
+      - targets: ['spark-worker:8081']
+
+  # Spark Consumer JSON - Driver & Executors
+  - job_name: 'spark-consumer-json-driver'
+    metrics_path: /metrics/driver/prometheus
+    static_configs:
+      - targets: ['spark-consumer-json:4040']
+
+#  - job_name: 'spark-consumer-json-executor'
+#    metrics_path: /metrics/executor/prometheus
+#    static_configs:
+#      - targets: ['spark-consumer-json:4040']
+
+  # Spark Consumer Parquet - Driver & Executors
+  - job_name: 'spark-consumer-parquet-driver'
+    metrics_path: /metrics/driver/prometheus
+    static_configs:
+      - targets: ['spark-consumer-parquet:4040']
+
+#  - job_name: 'spark-consumer-parquet-executor'
+#    metrics_path: /metrics/executor/prometheus
+#    static_configs:
+#      - targets: ['spark-consumer-parquet:4040']
+
+  # Kafka Exporter
+  - job_name: 'kafka-exporter'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+
+  # Kafka JMX
+  - job_name: 'kafka-jmx'
+    static_configs:
+      - targets: ['kafka:7071']
+
+  # Zookeeper JMX
+  - job_name: 'zookeeper-jmx'
+    static_configs:
+      - targets: ['zookeeper:7072']
+
+  # Zookeeper Exporter
+  - job_name: 'zookeeper-exporter'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['zookeeper-exporter:9141']
+
+  # Prometheus Itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # MinIO
+  - job_name: 'minio'
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ['minio:9000']

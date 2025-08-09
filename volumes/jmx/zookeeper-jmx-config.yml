@@ -1,0 +1,37 @@
+startDelaySeconds: 0
+ssl: false
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+rules:
+  # Latency metrics
+  - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id[0-9]+,name1=replica.[0-9]+,name2=Leader>:AvgRequestLatency"
+    name: zookeeper_avg_request_latency
+    type: GAUGE
+
+  - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id[0-9]+,name1=replica.[0-9]+,name2=Leader>:MaxRequestLatency"
+    name: zookeeper_max_request_latency
+    type: GAUGE
+
+  # Outstanding requests
+  - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id[0-9]+,name1=replica.[0-9]+,name2=Leader>:OutstandingRequests"
+    name: zookeeper_outstanding_requests
+    type: GAUGE
+
+  # Connections
+  - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id[0-9]+,name1=replica.[0-9]+,name2=Leader>:NumAliveConnections"
+    name: zookeeper_num_alive_connections
+    type: GAUGE
+
+  # Watches
+  - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id[0-9]+,name1=replica.[0-9]+,name2=Leader>:WatchCount"
+    name: zookeeper_watch_count
+    type: GAUGE
+
+  # Data tree size
+  - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id[0-9]+,name1=replica.[0-9]+,name2=Leader>:DataTreeSize"
+    name: zookeeper_data_tree_size
+    type: GAUGE
+
+  # Catch-all for anything else
+  - pattern: ".*"
