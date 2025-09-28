@@ -6,7 +6,7 @@ This is included in the zip file:
 
 1. Unzip the file.  It will create a sub-directory called cse6332_project   
 
-	unzip cse6332_project.zip
+	unzip cse6332_project.zip -d cse6332_project
 
 2. Change directories into that new sub-directory
 
@@ -20,17 +20,19 @@ This is included in the zip file:
 (you should stop the producers by using the stop parameter when shutting down your testing)
 
 	./manage_producers.sh start
+		and/or
+    ./manage_producers_ckafka.sh start
 
-5. Finally, after a minute or so, the following script should return without errors and give an indication of the entire process functioning.
+6. Finally, after a minute or so, the following script should return without errors and give an indication of the entire process functioning.
 
 	./pipeline_monitor.sh
-6. !!!IMPORTANT!!!
+7. !!!IMPORTANT!!!
 	Prior to stoping the containers
 	Manually stop the producers or use:
 	make stop
 	which runs ./stack_shutdown.sh
 
-7. Restart without all the initial install/startup process,
+8. Restart without all the initial install/startup process,
 	Just: make run
 
 You will always need to mmanually run the manage_producers*.sh scripts.
@@ -68,15 +70,12 @@ Grafana:
 	the username:password is admin:admin
 
 The prometheus endpoints are managed in the prometheus.yml file.
-Required file and directory permissions are handled by the prelaunch_check.sh
+
+Required file and directory permissions are handled by 'make install' 
 script which invokes the download_spark_kafka_jars.sh script. And 
 the containers, volumes, and ports are all managed by docker-commpose.yml
 
-Avoid using docker compose down -v as it will wipe out the minio data and 
-the grafana database. You can backup and restore the grafana database with
-those scipts but the grafana.db needs to be owned by 472:472. Just run the
-prelaunch_check.sh before restoring the database.
-
+Avoid using docker compose down -v as it will wipe out the minio data
 End of Quick Start
 
 docker compose ps --services will list the following:
