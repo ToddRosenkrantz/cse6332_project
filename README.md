@@ -27,7 +27,7 @@ This is included in the zip file:
 
 	./pipeline_monitor.sh
 7. !!!IMPORTANT!!!
-	Prior to stoping the containers
+	Prior to stopping the containers
 	Manually stop the producers or use:
 	make stop
 	which runs ./stack_shutdown.sh
@@ -35,7 +35,7 @@ This is included in the zip file:
 8. Restart without all the initial install/startup process,
 	Just: make run
 
-You will always need to mmanually run the manage_producers*.sh scripts.
+You will always need to manually run the manage_producers*.sh scripts.
 
 
 Some things to exammine:
