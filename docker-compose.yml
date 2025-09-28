@@ -65,6 +65,8 @@ services:
       - TZ=${TZ}
     ports:
       - "9092:9092"
+      # Port 7071 is used for Kafka JMX Exporter (Prometheus JMX metrics)
+      - "7071:7071"
     networks:
       - sparknet
     volumes:
