@@ -63,6 +63,12 @@ scrape_configs:
     static_configs:
       - targets: ['kafka:7071']
 
+  # Zookeeper
+  - job_name: 'zookeeper'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['zookeeper:7000']
+
   # Zookeeper JMX
   - job_name: 'zookeeper-jmx'
     static_configs:
@@ -84,3 +90,17 @@ scrape_configs:
     metrics_path: /minio/v2/metrics/cluster
     static_configs:
       - targets: ['minio:9000']
+
+### Uncomment if you want to run both types of producers at once
+### You will need to adjust the ports accordingly
+  - job_name: 'kafka-producer-json-ckafka'
+    scrape_interval: 2s
+    static_configs:
+      - targets: ['host.docker.internal:9118']
+        labels: { impl: 'ckafka' }
+
+  - job_name: 'kafka-producer-parq-ckafka'
+    scrape_interval: 2s
+    static_configs:
+      - targets: ['host.docker.internal:9119']
+        labels: { impl: 'ckafka' }

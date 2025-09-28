@@ -1,0 +1,173 @@
+ASSIGNMENT FRAMEWORK: Kafka Producer Tuning & Comparison
+
+A. Side-by-side differences (cheat sheet)
+| Aspect | kafka-python | confluent-kafka |
+|---|---|---|
+| Send API | producer.send(topic, value) returns a future (optional .get()) | producer.produce(topic, value, on_delivery=cb) |
+| IO / callbacks | No polling needed | Must call producer.poll() regularly |
+| Backpressure | Raises KafkaTimeoutError/blocks | Raises BufferError when queue is full |
+| Idempotent produce | Limited | enable.idempotence=true |
+| Throughput | Python-only | librdkafka C-core |
+| Compression | gzip, snappy | gzip, snappy, lz4, zstd |
+| Common tunables | linger_ms, batch_size | linger.ms, batch.size, compression.type, acks |
+| Delivery status | Future result / exceptions | on_delivery(err,msg) callback |
+
+B. Baseline configs (start here)
+[... trimmed for brevity, full table in original answer ...]
+
+C. Tuning knobs to explore
+- Partitions
+- linger
+- batch size
+- compression
+- acks
+- idempotence
+- message size
+- producer count
+- keying
+
+D. What to measure
+- Producer-side metrics from Prometheus
+- Broker metrics via JMX exporter
+- Consumer lag (optional)
+
+E. Grafana panels
+- Per-producer rate
+- Topic aggregate rate
+- Errors
+- Broker perspective
+
+F. Experiment design
+- Fix the environment
+- Choose a small matrix of configs
+- Warm up and measure
+- Record numbers and plot
+
+G. Run commands
+[examples from original answer]
+
+H. Reporting template
+Environment, topic config, workload, tuning, producers, results, conclusion
+
+I. Suggested “best settings”
+- confluent-kafka: linger.ms=10–20, batch.size=131072–262144, compression=zstd, acks=1 or all
+- kafka-python: similar but expect lower peak throughput
+
+J. Common pitfalls
+- One partition
+- Forgetting poll()
+- Too-high linger
+- acks=all on single broker
+
+
+---
+
+Grafana Dashboard JSON:
+
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "expr": "kafka_producer_message_rate{topic=\"$topic\"}",
+          "legendFormat": "{{client_id}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Producer Message Rate per Client",
+      "type": "timeseries"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum by (topic) (kafka_producer_message_rate)",
+          "legendFormat": "{{topic}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Message Rate per Topic",
+      "type": "timeseries"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "kafka_producer_error_rate{topic=\"$topic\"}",
+          "legendFormat": "{{client_id}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Error Rate per Client",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timezone": "",
+  "title": "Kafka Producer Tuning",
+  "uid": null,
+  "version": 1
+}

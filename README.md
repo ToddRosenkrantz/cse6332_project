@@ -16,41 +16,30 @@ This is included in the zip file:
 
 	make install
 
-4. Run the pre-launch script to set the permissions of various files and directories for the containers
-
-	./prelaunch_check.sh
-
-5. Start the entire stack.  This could take a while the first time as it downloads the container images 
-
-	docker compose up -d
-
-6. Now restore the grafana database or build your own dashboards from scratch. This will change 
-the default username:password from admin:admin to admin:admin123 (you can change later) 
-
-	./grafana_restore.sh
-
-7. Create the Kafka topics
-
-	./create_kafka_topic.sh
-
-8. Create the storage buckets for the data
-
-	./create_minio_bucket.sh
-
-9. You should now be able to start the message producers to begin 'publishing' messages
+4. You should now be able to start the message producers to begin 'publishing' messages
 (you should stop the producers by using the stop parameter when shutting down your testing)
 
 	./manage_producers.sh start
 
-10. Finally, after a few minute or so, this script should return without errors and give an indication of the entire process functioning.
+5. Finally, after a minute or so, the following script should return without errors and give an indication of the entire process functioning.
 
 	./pipeline_monitor.sh
+6. !!!IMPORTANT!!!
+	Prior to stoping the containers
+	Manually stop the producers or use:
+	make stop
+	which runs ./stack_shutdown.sh
+
+7. Restart without all the initial install/startup process,
+	Just: make run
+
+You will always need to mmanually run the manage_producers*.sh scripts.
 
 
 Some things to exammine:
 Prometheus:
 	http://localhost:9090/targets
-	all targets should be green if the producers are running. Only the producers
+	all targets should be green if all the producers are running. Only the producers not running
 	sould be red if not.
 
 Minio:
@@ -76,7 +65,7 @@ Grafana:
 	http://localhost:3000
 	the default username:password is admin:admin but we have replaced the 
 	default grafana.db with one that has some dashboards installed.
-	the username:password is admin:admin123
+	the username:password is admin:admin
 
 The prometheus endpoints are managed in the prometheus.yml file.
 Required file and directory permissions are handled by the prelaunch_check.sh

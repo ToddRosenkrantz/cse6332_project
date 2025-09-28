@@ -12,6 +12,7 @@ services:
     ports:
       - "2181:2181"
       - "7072:7072"
+      - "7000:7000"
     networks:
       - sparknet
     volumes:
@@ -118,9 +119,9 @@ services:
     networks:
       - sparknet
     volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/dashboards:/etc/grafana/dashboards
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      #- grafana_data:/var/lib/grafana
+      - grafana-var-lib:/var/lib/grafana
+      - grafana-provisioning:/var/lib/grafana/provisioning
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 10s
@@ -282,7 +283,8 @@ volumes:
   kafka_data:
   minio_data:
   prometheus_data:
-  grafana_data:
+  grafana-var-lib:
+  grafana-provisioning:
 
 networks:
   sparknet:

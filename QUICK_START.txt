@@ -10,32 +10,13 @@ Run 'make install', this will gather the various Python modules, project specifi
 
 	make install
 
-Run the pre-launch script to set the permissions of various files and directories for the containers
-
-	./prelaunch_check.sh
-
-Start the entire stack.  This could take a while the first time as it downloads the container images 
-
-	docker compose up -d
-
-Now restore the grafana database or build your own dashboards from scratch. This will change 
-the default username:password from admin:admin to admin:admin123 (you can change later) 
-
-	./grafana_restore.sh
-
-Create the Kafka topics
-
-	./create_kafka_topic.sh
-
-Create the storage buckets for the data
-
-	./create_minio_bucket.sh
-
-You should now be able to start the message producers to begin 'publishing' messages
+If you had no error, you should now be able to start the message producers to begin 'publishing' messages
 (you should stop the producers by using the stop parameter when shutting down your testing)
 
 	./manage_producers.sh start
+		or
+	./manage_producers_ckafka.sh
 
 Finally, this script should return without errors and give an indication of the entire process functioning.
-
+(currently step 5 produces shows nothing due to where checkpoiint files are stored now)
 	./pipeline_monitor.sh
