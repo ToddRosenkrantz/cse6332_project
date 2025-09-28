@@ -14,5 +14,5 @@ build/
 __pycache__/
 *.log
 
-# Explicitly allow the main project zip
-!cse6332_project.zip
+# Explicitly dis-allow the main project zip
+cse6332_project.zip
