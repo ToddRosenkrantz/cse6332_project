@@ -1,6 +1,6 @@
-Unzip the file.  It will create a sub-directory called cse6332_project   
+Unzip the file using the command below; this will create a sub-directory called cse6332_project.
 
-	unzip cse6332_project.zip
+	unzip cse6332_project.zip -d cse6332_project
 
 Change directories into that new sub-directory
 
@@ -14,7 +14,7 @@ If you had no error, you should now be able to start the message producers to be
 (you should stop the producers by using the stop parameter when shutting down your testing)
 
 	./manage_producers.sh start
-		or
+		and/or
 	./manage_producers_ckafka.sh
 
 Finally, this script should return without errors and give an indication of the entire process functioning.
